@@ -29,6 +29,7 @@ rm -rf feeds/packages/net/shadowsocks-rust
 rm -rf feeds/packages/net/tuic-client
 rm -rf feeds/packages/net/hysteria
 rm -rf feeds/packages/net/naiveproxy
+rm -rf feeds/packages/net/v2raya
 
 # Git稀疏克隆工具函数
 function git_sparse_clone() {
