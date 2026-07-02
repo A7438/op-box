@@ -80,6 +80,13 @@ jobs:
         echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
         echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_OUTPUT
 
+    # 第一步：先更新 feeds，让 feeds 目录真实存在
+    - name: Update Feeds
+      run: |
+        cd $OPENWRT_PATH
+        ./scripts/feeds update -a
+
+    # 第二步：再执行 DIY，此时 feeds 目录存在，删除/修改操作才会生效
     - name: Load Custom Configuration & DIY
       run: |
         [ -e files ] && mv files $OPENWRT_PATH/files
@@ -89,12 +96,13 @@ jobs:
         $GITHUB_WORKSPACE/$DIY_SCRIPT
         $GITHUB_WORKSPACE/scripts/preset-terminal-tools.sh
 
+    # 第三步：安装 feeds，把所有包链接到构建索引
     - name: Install Feeds
       run: |
         cd $OPENWRT_PATH
-        ./scripts/feeds update -a
         ./scripts/feeds install -a
 
+    # 第四步：最后加载配置并生成 defconfig，此时所有依赖都能被识别
     - name: Generate Variables & Defconfig
       id: variable
       run: |
