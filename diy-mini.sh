@@ -8,13 +8,27 @@ set -e
 # TTYD 免登录
 # sed -i 's|/bin/login|/bin/login -f root|g' feeds/packages/utils/ttyd/files/ttyd.config
 
-# 移除 feeds 中要替换的旧包（feeds 已更新，目录真实存在）
+# 移除要替换的内置包 + 彻底清理所有科学上网相关包
 rm -rf feeds/packages/net/mosdns
 rm -rf feeds/packages/net/msd_lite
 rm -rf feeds/packages/net/smartdns
 rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/luci/applications/luci-app-mosdns
 rm -rf feeds/luci/applications/luci-app-netdata
+
+# 彻底清理 feeds 中所有科学上网类插件及依赖
+rm -rf feeds/luci/applications/luci-app-passwall
+rm -rf feeds/luci/applications/luci-app-passwall2
+rm -rf feeds/luci/applications/luci-app-ssr-plus
+rm -rf feeds/luci/applications/luci-app-vssr
+rm -rf feeds/luci/applications/luci-app-openclash
+rm -rf feeds/packages/net/ipt2socks
+rm -rf feeds/packages/net/xray-core
+rm -rf feeds/packages/net/v2ray-core
+rm -rf feeds/packages/net/shadowsocks-rust
+rm -rf feeds/packages/net/tuic-client
+rm -rf feeds/packages/net/hysteria
+rm -rf feeds/packages/net/naiveproxy
 
 # Git稀疏克隆工具函数
 function git_sparse_clone() {
@@ -80,7 +94,7 @@ sed -i "s/${orig_version}/R${date_version} by Haiibo/g" package/lean/default-set
 # 修复 hostapd 编译报错
 [ -f "$GITHUB_WORKSPACE/scripts/011-fix-mbo-modules-build.patch" ] && cp -f "$GITHUB_WORKSPACE/scripts/011-fix-mbo-modules-build.patch" package/network/services/hostapd/patches/011-fix-mbo-modules-build.patch
 
-# 修复 armv8 设备 xfsprogs 编译报错（feeds 已更新，文件存在）
+# 修复 armv8 设备 xfsprogs 编译报错
 [ -f feeds/packages/utils/xfsprogs/Makefile ] && sed -i 's/TARGET_CFLAGS.*/TARGET_CFLAGS += -DHAVE_MAP_SYNC -D_LARGEFILE64_SOURCE/g' feeds/packages/utils/xfsprogs/Makefile
 
 # 修正第三方插件 Makefile 路径
