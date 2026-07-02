@@ -1,10 +1,8 @@
 name: ARMv8 Mini OpenWrt
-
 on:
   workflow_dispatch:
   schedule:
     - cron: 0 20 * * *
-
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
@@ -18,11 +16,9 @@ env:
   OPENWRT_RELEASE: true
   OPENWRT_TAG: ARMv8_MINI
   TZ: Asia/Shanghai
-
 jobs:
   Build:
     runs-on: ubuntu-22.04
-
     outputs:
       COMMIT_AUTHOR: ${{ steps.clone.outputs.COMMIT_AUTHOR }}
       COMMIT_DATE: ${{ steps.clone.outputs.COMMIT_DATE }}
@@ -30,11 +26,9 @@ jobs:
       COMMIT_HASH: ${{ steps.clone.outputs.COMMIT_HASH }}
       DEVICE_TARGET: ${{ steps.variable.outputs.DEVICE_TARGET }}
       DEVICE_SUBTARGET: ${{ steps.variable.outputs.DEVICE_SUBTARGET }}
-
     steps:
     - name: Checkout
       uses: actions/checkout@main
-
     - name: Check Server Performance
       run: |
         echo "警告⚠"
@@ -49,7 +43,6 @@ jobs:
         echo -e "$(sudo lshw -short -C memory | grep GiB)\n"
         echo "--------------------------硬盘信息--------------------------"
         echo "硬盘数量: $(ls /dev/sd* | grep -v [1-9] | wc -l)" && df -hT
-
     - name: Initialization Environment
       env:
         DEBIAN_FRONTEND: noninteractive
@@ -65,7 +58,6 @@ jobs:
         sudo -E apt-get -y autoremove --purge
         sudo -E apt-get -y clean
         sudo timedatectl set-timezone "$TZ"
-
     - name: Clone Source Code
       id: clone
       run: |
@@ -85,7 +77,6 @@ jobs:
         COMMIT_HASH=$(git show -s --date=short --format="hash: %H")
         echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
         echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_OUTPUT
-
     - name: Generate Variables
       id: variable
       run: |
@@ -100,7 +91,6 @@ jobs:
         DEVICE_SUBTARGET=$(cat .config | grep CONFIG_TARGET_SUBTARGET | awk -F '"' '{print $2}')
         echo "DEVICE_SUBTARGET=$DEVICE_SUBTARGET" >> $GITHUB_ENV
         echo "DEVICE_SUBTARGET=$DEVICE_SUBTARGET" >> $GITHUB_OUTPUT
-
     # ========== 新增：缓存 ccache ==========
     - name: Cache ccache
       uses: actions/cache@v4
@@ -109,7 +99,6 @@ jobs:
         key: ${{ runner.os }}-ccache-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-${{ hashFiles('${{ env.OPENWRT_PATH }}/.config') }}
         restore-keys: |
           ${{ runner.os }}-ccache-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-
-
     # ========== 新增：缓存 DL 目录 ==========
     - name: Cache DL directory
       uses: actions/cache@v4
@@ -118,7 +107,6 @@ jobs:
         key: ${{ runner.os }}-dl-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-${{ hashFiles('${{ env.OPENWRT_PATH }}/.config') }}
         restore-keys: |
           ${{ runner.os }}-dl-${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-
-
     # ========== 修改：保留原有工具链缓存，并开启 ccache ==========
     - name: Cache Toolchain
       if: env.CACHE_TOOLCHAIN == 'true'
@@ -127,13 +115,11 @@ jobs:
         ccache: true          # 原为 false，改为 true
         mixkey: ${{ env.SOURCE_REPO }}-${{ env.REPO_BRANCH }}-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
         prefix: ${{ env.OPENWRT_PATH }}
-
     - name: Install Feeds
       run: |
         cd $OPENWRT_PATH
         ./scripts/feeds update -a
         ./scripts/feeds install -a
-
     - name: Load Custom Configuration
       run: |
         [ -e files ] && mv files $OPENWRT_PATH/files
@@ -142,9 +128,8 @@ jobs:
         chmod +x $DIY_SCRIPT
         cd $OPENWRT_PATH
         $GITHUB_WORKSPACE/$DIY_SCRIPT
-        $GITHUB_WORKSPACE/scripts/preset-clash-core.sh $CLASH_KERNEL
+        # 已删除 clash 内核脚本调用：$GITHUB_WORKSPACE/scripts/preset-clash-core.sh $CLASH_KERNEL
         $GITHUB_WORKSPACE/scripts/preset-terminal-tools.sh
-
     - name: Download DL Package
       run: |
         cd $OPENWRT_PATH
@@ -152,7 +137,6 @@ jobs:
         make download -j8
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
-
     - name: Compile Firmware
       id: compile
       run: |
@@ -164,18 +148,15 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
         echo "DATE=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
         echo "FILE_DATE=$(date +"%Y.%m.%d")" >> $GITHUB_ENV
-
     - name: Check Space Usage
       if: (!cancelled())
       run: df -hT
-
     - name: Upload Bin Directory
       if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
       uses: actions/upload-artifact@main
       with:
         name: ${{ env.SOURCE_REPO }}-bin-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-${{ env.FILE_DATE }}
         path: ${{ env.OPENWRT_PATH }}/bin
-
     - name: Organize Files
       if: steps.compile.outputs.status == 'success'
       run: |
@@ -186,14 +167,12 @@ jobs:
         tar -zcf Packages.tar.gz packages
         rm -rf packages feeds.buildinfo version.buildinfo
         echo "FIRMWARE_PATH=$PWD" >> $GITHUB_ENV
-
     - name: Upload Firmware To Artifact
       if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE != 'true'
       uses: actions/upload-artifact@main
       with:
         name: ${{ env.SOURCE_REPO }}-firmware-${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}-${{ env.FILE_DATE }}
         path: ${{ env.FIRMWARE_PATH }}
-
     - name: Upload Firmware To Release
       if: steps.compile.outputs.status == 'success' && env.FIRMWARE_RELEASE == 'true'
       uses: ncipollo/release-action@v1
@@ -218,11 +197,9 @@ jobs:
           - ${{ env.COMMIT_DATE }}
           - ${{ env.COMMIT_MESSAGE }}
           - ${{ env.COMMIT_HASH }}
-
   Package:
     needs: [Build]
     runs-on: ubuntu-22.04
-
     env:
       COMMIT_AUTHOR: ${{ needs.Build.outputs.COMMIT_AUTHOR }}
       COMMIT_DATE: ${{ needs.Build.outputs.COMMIT_DATE }}
@@ -230,11 +207,9 @@ jobs:
       COMMIT_HASH: ${{ needs.Build.outputs.COMMIT_HASH }}
       DEVICE_TARGET: ${{ needs.Build.outputs.DEVICE_TARGET }}
       DEVICE_SUBTARGET: ${{ needs.Build.outputs.DEVICE_SUBTARGET }}
-
     steps:
     - name: Checkout
       uses: actions/checkout@main
-
     - name: Initialization Environment
       env:
         DEBIAN_FRONTEND: noninteractive
@@ -246,7 +221,6 @@ jobs:
         sudo -E apt-get -y autoremove --purge
         sudo -E apt-get -y clean
         sudo timedatectl set-timezone "$TZ"
-
     - name: Download Armvirt Firmware
       id: download
       run: |
@@ -257,7 +231,6 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
         echo "DATE=$(date +"%Y-%m-%d %H:%M:%S")" >> $GITHUB_ENV
         echo "DATE1=$(date +"%y.%m.%d")" >> $GITHUB_ENV
-
     - name: Package OpenWrt Firmware
       if: steps.download.outputs.status == 'success'
       uses: ophub/flippy-openwrt-actions@main
@@ -268,13 +241,11 @@ jobs:
         KERNEL_VERSION_NAME: 5.15.13_6.1.5
         KERNEL_AUTO_LATEST: true
         DISTRIB_REVISION: R${{ env.DATE1 }} by Haiibo
-
     - name: Upload OpenWrt To Artifact
       if: env.PACKAGED_STATUS == 'success' && env.OPENWRT_RELEASE != 'true'
       uses: kittaakos/upload-artifact-as-is@master
       with:
         path: ${{ env.PACKAGED_OUTPUTPATH }}
-
     - name: Upload OpenWrt To Release
       if: env.PACKAGED_STATUS == 'success' && env.OPENWRT_RELEASE == 'true'
       uses: ncipollo/release-action@v1
@@ -288,7 +259,7 @@ jobs:
         body: |
           **This is OpenWrt Firmware for Armvirt 64**
           ### 📒 固件信息
-          - 🚀 ARMv8 精简版，主打科学上网适合养老
+          - 🚀 ARMv8 精简版，纯净无科学上网插件
           - 💻 平台架构: ${{ env.DEVICE_TARGET }}-${{ env.DEVICE_SUBTARGET }}
           - ⚽ 固件源码: ${{ env.REPO_URL }}
           - 💝 源码分支: ${{ env.REPO_BRANCH }}
