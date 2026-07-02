@@ -81,7 +81,9 @@ sed -i "s/${orig_version}/R${date_version} by Haiibo/g" package/lean/default-set
 [ -f "$GITHUB_WORKSPACE/scripts/011-fix-mbo-modules-build.patch" ] && cp -f "$GITHUB_WORKSPACE/scripts/011-fix-mbo-modules-build.patch" package/network/services/hostapd/patches/011-fix-mbo-modules-build.patch
 
 # 修复 armv8 设备 xfsprogs 编译报错
-sed -i 's/TARGET_CFLAGS.*/TARGET_CFLAGS += -DHAVE_MAP_SYNC -D_LARGEFILE64_SOURCE/g' feeds/packages/utils/xfsprogs/Makefile
+# sed -i 's/TARGET_CFLAGS.*/TARGET_CFLAGS += -DHAVE_MAP_SYNC -D_LARGEFILE64_SOURCE/g' feeds/packages/utils/xfsprogs/Makefile
+# 修复 armv8 设备 xfsprogs 报错（文件存在才执行，避免 feeds 未拉取时报错）
+[ -f feeds/packages/utils/xfsprogs/Makefile ] && sed -i 's/TARGET_CFLAGS.*/TARGET_CFLAGS += -DHAVE_MAP_SYNC -D_LARGEFILE64_SOURCE/g' feeds/packages/utils/xfsprogs/Makefile
 
 # 修正第三方插件 Makefile 路径
 find package/luci-* -name "Makefile" -exec sed -i 's|../../luci.mk|$(TOPDIR)/feeds/luci/luci.mk|g' {} \;
