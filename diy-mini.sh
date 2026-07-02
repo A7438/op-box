@@ -8,7 +8,7 @@ set -e
 # TTYD 免登录
 # sed -i 's|/bin/login|/bin/login -f root|g' feeds/packages/utils/ttyd/files/ttyd.config
 
-# 移除要替换的内置包
+# 移除 feeds 中要替换的旧包（feeds 已更新，目录真实存在）
 rm -rf feeds/packages/net/mosdns
 rm -rf feeds/packages/net/msd_lite
 rm -rf feeds/packages/net/smartdns
@@ -40,7 +40,7 @@ git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config package/l
 git clone --depth=1 https://github.com/xiaoqingfengATGH/luci-theme-infinityfreedom package/luci-theme-infinityfreedom
 git_sparse_clone main https://github.com/haiibo/packages luci-theme-opentomcat
 
-# Argon 主题自定义背景（文件不存在则跳过）
+# Argon 主题自定义背景
 [ -f "$GITHUB_WORKSPACE/images/bg1.jpg" ] && cp -f "$GITHUB_WORKSPACE/images/bg1.jpg" package/luci-theme-argon/htdocs/luci-static/argon/img/bg1.jpg
 
 # 晶晨宝盒
@@ -77,12 +77,10 @@ date_version=$(date +"%y.%m.%d")
 orig_version=$(grep DISTRIB_REVISION= package/lean/default-settings/files/zzz-default-settings | awk -F "'" '{print $2}')
 sed -i "s/${orig_version}/R${date_version} by Haiibo/g" package/lean/default-settings/files/zzz-default-settings
 
-# 修复 hostapd 编译报错（补丁不存在则跳过）
+# 修复 hostapd 编译报错
 [ -f "$GITHUB_WORKSPACE/scripts/011-fix-mbo-modules-build.patch" ] && cp -f "$GITHUB_WORKSPACE/scripts/011-fix-mbo-modules-build.patch" package/network/services/hostapd/patches/011-fix-mbo-modules-build.patch
 
-# 修复 armv8 设备 xfsprogs 编译报错
-# sed -i 's/TARGET_CFLAGS.*/TARGET_CFLAGS += -DHAVE_MAP_SYNC -D_LARGEFILE64_SOURCE/g' feeds/packages/utils/xfsprogs/Makefile
-# 修复 armv8 设备 xfsprogs 报错（文件存在才执行，避免 feeds 未拉取时报错）
+# 修复 armv8 设备 xfsprogs 编译报错（feeds 已更新，文件存在）
 [ -f feeds/packages/utils/xfsprogs/Makefile ] && sed -i 's/TARGET_CFLAGS.*/TARGET_CFLAGS += -DHAVE_MAP_SYNC -D_LARGEFILE64_SOURCE/g' feeds/packages/utils/xfsprogs/Makefile
 
 # 修正第三方插件 Makefile 路径
@@ -91,6 +89,3 @@ find package/ -path "*/golang/*" -name "Makefile" -exec sed -i 's|../../lang/gol
 
 # 取消主题强制默认设置
 find package/luci-theme-*/* -type f -name '*luci-theme-*' -exec sed -i '/set luci.main.mediaurlbase/d' {} \; 2>/dev/null || true
-
-./scripts/feeds update -a
-./scripts/feeds install -a
