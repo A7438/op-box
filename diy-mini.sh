@@ -89,3 +89,6 @@ find package/ -path "*/golang/*" -name "Makefile" -exec sed -i 's|../../lang/gol
 
 # 取消主题强制默认设置
 find package/luci-theme-*/* -type f -name '*luci-theme-*' -exec sed -i '/set luci.main.mediaurlbase/d' {} \; 2>/dev/null || true
+
+./scripts/feeds update -a
+./scripts/feeds install -a
